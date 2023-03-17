@@ -6,12 +6,12 @@ import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.esgi.project.api.models.{MeanLatencyForURLResponse, VisitCountResponse}
-import org.esgi.project.streaming.models.MeanLatencyForURL
+import org.esgi.project.domain.models.MeanLatencyForURL
 
 object WebServer extends PlayJsonSupport {
   def routes(streams: KafkaStreams): Route = {
     concat(
-      path("visits" / Segment) { period: String =>
+      path("trades" / Segment) { period: String =>
         get {
           complete(
             List(VisitCountResponse("", 0))

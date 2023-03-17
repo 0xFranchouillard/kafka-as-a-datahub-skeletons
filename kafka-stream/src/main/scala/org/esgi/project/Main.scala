@@ -1,12 +1,11 @@
 package org.esgi.project
 
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.streams.KafkaStreams
 import org.esgi.project.api.WebServer
-import org.esgi.project.streaming.StreamProcessing
+import org.esgi.project.domain.services.StreamProcessing
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.ExecutionContextExecutor
