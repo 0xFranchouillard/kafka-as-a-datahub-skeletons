@@ -1,4 +1,4 @@
-package org.esgi.project.streaming
+package org.esgi.project.domain.services
 
 import io.github.azhur.kafka.serde.PlayJsonSupport
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -10,12 +10,14 @@ import java.util.Properties
 
 object StreamProcessing extends PlayJsonSupport {
 
-  val applicationName = s"some-application-name"
+  val applicationName = s"esgi-iabd-binance-kafka-stream"
 
   private val props: Properties = buildProperties
 
   // defining processing graph
   val builder: StreamsBuilder = new StreamsBuilder
+  // TODO: All the code will be under the builder
+  val processedStream: StreamsBuilder = new processStream();
 
   def run(): KafkaStreams = {
     val streams: KafkaStreams = new KafkaStreams(builder.build(), props)

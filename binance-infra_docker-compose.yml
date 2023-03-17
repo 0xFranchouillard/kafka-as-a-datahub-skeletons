@@ -1,6 +1,13 @@
 ---
 version: '3'
 services:
+  dev:
+    image: hseeberger/scala-sbt:11.0.7_1.3.13_2.13.3
+    working_dir: /kafka-as-a-datahub/kafka-stream/src/main/scala/org/esgi/project
+    command: sbt run main
+    ports:
+      - "8080:8080"
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: zookeeper
