@@ -1,15 +1,12 @@
 package org.esgi.project.domain.models
 
-import java.time.Instant
+import play.api.libs.json.{Json, OFormat}
 
-case class TradesByPairByMin(eventTime: Instant, pair: String, price: Double, quantity: Double) {
-  def apply(eventTime: Instant, pair: String, price: String, quantity: String): TradesByPairByMin = {
-    val priceInDouble = convertStringToDouble(price)
-    val quantityInDouble = convertStringToDouble(quantity)
-    TradesByPairByMin(eventTime, pair, priceInDouble, quantityInDouble)
-  }
-  private def convertStringToDouble(str: String): Double = {
-    str.toDouble
+import java.time.{OffsetDateTime}
+
+case class TradesByPairByMin(eventTime: OffsetDateTime, pair: String, price: Double, quantity: Double) {
+  def apply(trade: Trade): TradesByPairByMin = {
+    TradesByPairByMin(trade.eventTime, trade.pair, trade.price, trade.quantity)
   }
 }
 

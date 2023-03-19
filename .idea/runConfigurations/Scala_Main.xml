@@ -2,6 +2,8 @@
   <configuration default="false" name="Scala Main" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.esgi.project.Main" />
     <module name="kafka-streams-solution" />
+    <projectPathOnTarget name="projectPathOnTarget" value="/app" />
+    <target name="@@@LOCAL@@@" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.esgi.project.*" />
