@@ -25,7 +25,7 @@ import java.time.OffsetDateTime
    }
  */
 case class Trade(
-    eventType: OffsetDateTime,
+    eventType: String,
     eventTime: OffsetDateTime,
     pair: String,
     tradeId: Int,
@@ -38,7 +38,7 @@ case class Trade(
     isBestMatch: Boolean
 ) {
   def apply(
-      eventType: OffsetDateTime,
+      eventType: String,
       eventTime: OffsetDateTime,
       pair: String,
       tradeId: Integer,
