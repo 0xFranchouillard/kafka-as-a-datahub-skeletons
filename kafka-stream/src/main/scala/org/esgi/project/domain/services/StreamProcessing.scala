@@ -8,7 +8,7 @@ import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.esgi.project.domain.models.Trade
+import org.esgi.project.domain.models.{Trade, TradeInput}
 
 import java.time.Duration
 import java.util.Properties
@@ -30,18 +30,34 @@ object StreamProcessing extends PlayJsonSupport {
   val tradesTopicName: String = "trades"
   val tradesByPairByMinStoreName: String = "TradesByPairByMin"
 
+  implicit val tradeInputSerde: Serde[TradeInput] = toSerde[TradeInput]
   implicit val tradeSerde: Serde[Trade] = toSerde[Trade]
 
-  val trades: KStream[String, Trade] = builder.stream[String, Trade](tradesTopicName)
-  logger.info("test 0")
+  val tradesInput: KStream[String, TradeInput] = builder.stream[String, TradeInput](tradesTopicName)
+
+  val trades: KStream[String, Trade] = tradesInput.mapValues(tradeInput =>
+    Trade(
+      eventType = tradeInput.e,
+      eventTime = tradeInput.E,
+      pair = tradeInput.s,
+      tradeId = tradeInput.t,
+      price = tradeInput.p,
+      quantity = tradeInput.q,
+      buyerOrderId = tradeInput.b,
+      sellerOrderId = tradeInput.a,
+      tradeTime = tradeInput.T,
+      isBuyerMaker = tradeInput.m,
+      isBestMatch = tradeInput.M
+    )
+  )
+
   val tradesByPair: KGroupedStream[String, Trade] = trades.groupBy((_, trade) => trade.pair)
-  logger.info("test 1")
+
   val tradesByPairByMin: KTable[Windowed[String], Long] = tradesByPair
     .windowedBy(
-      TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
+      TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(10)).advanceBy(Duration.ofSeconds(1))
     )
     .count()(Materialized.as(tradesByPairByMinStoreName))
-  logger.info("test 2")
 
   def run(): KafkaStreams = {
     val streams: KafkaStreams = new KafkaStreams(builder.build(), props)
