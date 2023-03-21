@@ -8,7 +8,7 @@ import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.esgi.project.domain.models.{Trade, TradeInput}
+import org.esgi.project.domain.models.{MeanPriceByPairPerMin, Trade, TradeInput}
 
 import java.time.Duration
 import java.util.Properties
@@ -28,7 +28,11 @@ object StreamProcessing extends PlayJsonSupport {
 
   // TODO: All the code will be under the builder
   val tradesTopicName: String = "trades"
-  val tradesByPairByMinStoreName: String = "TradesByPairByMin"
+
+  val tradesByPairByMinStoreName: String = "TradesByPairByMinStore"
+  val meanPriceByPairPerMinStoreName: String = "MeanPriceByPairPerMinStore"
+  val tradesVolByPairPerMinStoreName: String = "TradesVolByPairPerMinStore"
+  val tradesVolByPairPerHourStoreName: String = "TradesVolByPairPerHourStore"
 
   implicit val tradeInputSerde: Serde[TradeInput] = toSerde[TradeInput]
   implicit val tradeSerde: Serde[Trade] = toSerde[Trade]
@@ -55,9 +59,47 @@ object StreamProcessing extends PlayJsonSupport {
 
   val tradesByPairByMin: KTable[Windowed[String], Long] = tradesByPair
     .windowedBy(
-      TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(10)).advanceBy(Duration.ofSeconds(1))
+      TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
     )
     .count()(Materialized.as(tradesByPairByMinStoreName))
+
+  val meanPriceByPairPerMin: KTable[Windowed[String], MeanPriceByPairPerMin] = tradesByPair
+    .windowedBy(
+      TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
+    )
+    .aggregate[MeanPriceByPairPerMin](
+      initializer = MeanPriceByPairPerMin.empty
+    )(aggregator = { (_, trade, agg) =>
+      agg.increment(trade.price)
+    })(Materialized.as(meanPriceByPairPerMinStoreName))
+
+  /*
+  TODO: Implement the following functionality below
+   Prix d'ouverture, fermeture, le plus bas et le plus haut d'échange par paire (équivalent des bougies de bourse), par minute
+   Prix = champ price dans le trade
+
+   val tradesCandlestickByPairPerMin = ???
+   */
+
+  val tradesVolByPairPerMin: KTable[Windowed[String], Double] = tradesByPair
+    .windowedBy(
+      TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
+    )
+    .aggregate[Double](
+      initializer = 0L
+    )(aggregator = { (_, trade, agg) =>
+      agg + trade.quantity
+    })(Materialized.as(tradesVolByPairPerMinStoreName))
+
+  val tradesVolByPairPerHour: KTable[Windowed[String], Double] = tradesByPair
+    .windowedBy(
+      TimeWindows.ofSizeWithNoGrace(Duration.ofHours(1)).advanceBy(Duration.ofHours(1))
+    )
+    .aggregate[Double](
+      initializer = 0L
+    )(aggregator = { (_, trade, agg) =>
+      agg + trade.quantity
+    })(Materialized.as(tradesVolByPairPerHourStoreName))
 
   def run(): KafkaStreams = {
     val streams: KafkaStreams = new KafkaStreams(builder.build(), props)
