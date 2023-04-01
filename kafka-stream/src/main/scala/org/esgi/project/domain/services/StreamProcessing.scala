@@ -8,7 +8,7 @@ import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.esgi.project.domain.models.{stockExchange, MeanPriceByPairPerMin, Trade, TradeInput}
+import org.esgi.project.domain.models.{StockExchange, MeanPriceByPairPerMin, Trade, TradeInput}
 
 import java.time.Duration
 import java.util.Properties
@@ -74,12 +74,12 @@ object StreamProcessing extends PlayJsonSupport {
       agg.increment(trade.price)
     })(Materialized.as(meanPriceByPairPerMinStoreName))
 
-  val tradesCandlestickByPairPerMin: KTable[Windowed[String], stockExchange] = tradesByPair
+  val tradesCandlestickByPairPerMin: KTable[Windowed[String], StockExchange] = tradesByPair
     .windowedBy(
       TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
     )
-    .aggregate[stockExchange](
-      initializer = stockExchange.empty
+    .aggregate[StockExchange](
+      initializer = StockExchange.empty
     )(aggregator = { (_, trade, agg) =>
       agg.increment(trade.price)
     })(Materialized.as(stockExchangeByPairPerMin))
