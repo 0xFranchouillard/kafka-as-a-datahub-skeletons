@@ -8,7 +8,7 @@ import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.esgi.project.domain.models.{MeanPriceByPairPerMin, Trade, TradeInput}
+import org.esgi.project.domain.models.{StockExchange, MeanPriceByPairPerMin, Trade, TradeInput}
 
 import java.time.Duration
 import java.util.Properties
@@ -31,6 +31,7 @@ object StreamProcessing extends PlayJsonSupport {
 
   val tradesByPairByMinStoreName: String = "TradesByPairByMinStore"
   val meanPriceByPairPerMinStoreName: String = "MeanPriceByPairPerMinStore"
+  val stockExchangeByPairPerMin: String = "StockExchangeByPairPerMin"
   val tradesVolByPairPerMinStoreName: String = "TradesVolByPairPerMinStore"
   val tradesVolByPairPerHourStoreName: String = "TradesVolByPairPerHourStore"
 
@@ -73,13 +74,15 @@ object StreamProcessing extends PlayJsonSupport {
       agg.increment(trade.price)
     })(Materialized.as(meanPriceByPairPerMinStoreName))
 
-  /*
-  TODO: Implement the following functionality below
-   Prix d'ouverture, fermeture, le plus bas et le plus haut d'échange par paire (équivalent des bougies de bourse), par minute
-   Prix = champ price dans le trade
-
-   val tradesCandlestickByPairPerMin = ???
-   */
+  val tradesCandlestickByPairPerMin: KTable[Windowed[String], StockExchange] = tradesByPair
+    .windowedBy(
+      TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
+    )
+    .aggregate[StockExchange](
+      initializer = StockExchange.empty
+    )(aggregator = { (_, trade, agg) =>
+      agg.increment(trade.price)
+    })(Materialized.as(stockExchangeByPairPerMin))
 
   val tradesVolByPairPerMin: KTable[Windowed[String], Double] = tradesByPair
     .windowedBy(
