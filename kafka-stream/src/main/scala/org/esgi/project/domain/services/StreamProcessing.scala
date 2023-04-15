@@ -4,22 +4,20 @@ import io.github.azhur.kafka.serde.PlayJsonSupport
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.kstream.{TimeWindows, Windowed}
+import org.apache.kafka.streams.kstream.{Printed, TimeWindows, Windowed}
 import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.scala.kstream._
-import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
-import org.esgi.project.domain.models.{StockExchange, MeanPriceByPairPerMin, Trade, TradeInput}
+import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
+import org.esgi.project.domain.models.{MeanPriceByPairPerMin, StockExchange, Trade, TradeInput}
 
 import java.time.Duration
 import java.util.Properties
-import org.slf4j.{Logger, LoggerFactory}
 
 object StreamProcessing extends PlayJsonSupport {
   import org.apache.kafka.streams.scala.ImplicitConversions._
   import org.apache.kafka.streams.scala.serialization.Serdes._
 
   val applicationName = s"esgi-iabd-binance-kafka-stream"
-  val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   private val props: Properties = buildProperties
 
@@ -56,6 +54,8 @@ object StreamProcessing extends PlayJsonSupport {
     )
   )
 
+//  trades.print(Printed.toSysOut);
+
   val tradesByPair: KGroupedStream[String, Trade] = trades.groupBy((_, trade) => trade.pair)
 
   val tradesByPairByMin: KTable[Windowed[String], Long] = tradesByPair
@@ -63,6 +63,8 @@ object StreamProcessing extends PlayJsonSupport {
       TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
     )
     .count()(Materialized.as(tradesByPairByMinStoreName))
+
+  tradesByPairByMin.toStream.print(Printed.toSysOut);
 
   val meanPriceByPairPerMin: KTable[Windowed[String], MeanPriceByPairPerMin] = tradesByPair
     .windowedBy(
@@ -105,7 +107,7 @@ object StreamProcessing extends PlayJsonSupport {
     })(Materialized.as(tradesVolByPairPerHourStoreName))
 
   def run(): KafkaStreams = {
-    val streams: KafkaStreams = new KafkaStreams(builder.build(), props)
+    val streams: KafkaStreams = new KafkaStreams(topology, props)
     streams.start()
 
     // Add shutdown hook to respond to SIGTERM and gracefully close Kafka Streams
@@ -116,6 +118,7 @@ object StreamProcessing extends PlayJsonSupport {
     }))
     streams
   }
+  def topology: Topology = builder.build()
 
   // auto loader from properties file in project
   def buildProperties: Properties = {
