@@ -54,7 +54,7 @@ object StreamProcessing extends PlayJsonSupport {
     )
   )
 
-//  trades.print(Printed.toSysOut);
+  //trades.print(Printed.toSysOut);
 
   val tradesByPair: KGroupedStream[String, Trade] = trades.groupBy((_, trade) => trade.pair)
 
@@ -64,7 +64,7 @@ object StreamProcessing extends PlayJsonSupport {
     )
     .count()(Materialized.as(tradesByPairByMinStoreName))
 
-  tradesByPairByMin.toStream.print(Printed.toSysOut);
+  //tradesByPairByMin.toStream.print(Printed.toSysOut);
 
   val meanPriceByPairPerMin: KTable[Windowed[String], MeanPriceByPairPerMin] = tradesByPair
     .windowedBy(
@@ -85,7 +85,7 @@ object StreamProcessing extends PlayJsonSupport {
     )(aggregator = { (_, trade, agg) =>
       agg.increment(trade.price)
     })(Materialized.as(stockExchangeByPairPerMin))
-
+  //tradesCandlestickByPairPerMin.toStream.print(Printed.toSysOut)
   val tradesVolByPairPerMin: KTable[Windowed[String], Double] = tradesByPair
     .windowedBy(
       TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)).advanceBy(Duration.ofMinutes(1))
@@ -105,7 +105,7 @@ object StreamProcessing extends PlayJsonSupport {
     )(aggregator = { (_, trade, agg) =>
       agg + trade.quantity
     })(Materialized.as(tradesVolByPairPerHourStoreName))
-
+  //tradesVolByPairPerHour.toStream.print(Printed.toSysOut)
   def run(): KafkaStreams = {
     val streams: KafkaStreams = new KafkaStreams(topology, props)
     streams.start()

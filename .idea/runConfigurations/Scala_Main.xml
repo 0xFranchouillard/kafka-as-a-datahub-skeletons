@@ -6,7 +6,7 @@
     <target name="@@@LOCAL@@@" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="org.esgi.project.*" />
+        <option name="PATTERN" value="org.esgi.project.api.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
